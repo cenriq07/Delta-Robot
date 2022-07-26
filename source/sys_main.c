@@ -70,9 +70,9 @@ hetSIGNAL_t M2;
 hetSIGNAL_t M3;
 
                   /*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
-struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  10.0,   0.5,   50.0,   0,   0};
-struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  10.0,   0.5,   50.0,   0,   0};
-struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  10.0,   0.5,   50.0,   0,   0};
+struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  30.0,   0.5,   20.0,   0,   0};
+struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  30.0,   0.5,   20.0,   0,   0};
+struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  30.0,   0.5,   20.0,   0,   0};
 
 /*  CONTROL */
 int ISRbit = 0;
@@ -236,10 +236,10 @@ void vMotorCtrl(void *pvParameters)
         M2.duty = motorPID(&Motor_2, error, dPosition[1], aPosition[1]);
         pwmSetSignal10e3(hetRAM1, M2_PWM, M2);
 
-//        M3.duty = motorPID(&Motor_3, error, dPosition[2], aPosition[2]);
-//        pwmSetSignal10e3(hetRAM1, M3_PWM, M3);
+        M3.duty = motorPID(&Motor_3, error, dPosition[2], aPosition[2]);
+        pwmSetSignal10e3(hetRAM1, M3_PWM, M3);
 
-        if(Motor_1.errCheck == 1 && Motor_2.errCheck)//== 1 && Motor_3.errCheck == 1)
+        if(Motor_1.errCheck == 1 && Motor_2.errCheck == 1 && Motor_3.errCheck == 1)
         {
             enaPlan = 1;
             xQueueSend(MCtrl2Plan_QHandle,&enaPlan,100);
@@ -267,7 +267,9 @@ void vPlanner(void *pvParameters)
 {
 //    float posiciones[8] = {0.0,45.0,90.0,135.0,180.0,225.0,270.0,315.0};
 //    float posiciones[4] = {0.0,90.0,180.0,270.0};
-    float posiciones[10] = {0.0,5.0,10.0,15.0,20.0,25.0,30.0,35.0,40.0,45.0};
+//    float posiciones[10] = {0.0,5.0,10.0,15.0,20.0,25.0,30.0,35.0,40.0,45.0};
+    float posiciones[10] = {0.0,10.0,20.0,30.0,40.0,50.0,60.0,70.0,80.0,90.0};
+
     int index = 0;
     float dPosition[3] = {0.0, 0.0, 0.0};  // Posición deseada en grados
     int enableFlag = 0;

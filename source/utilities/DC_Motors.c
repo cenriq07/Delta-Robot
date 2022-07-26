@@ -44,9 +44,14 @@ int motorPID(struct Motor *xMotor, float error[], float refPos, float actPos)
         xMotor->errCheck = 0;
 
     xMotor->Up = (int)(error[actual]*(xMotor->Kp));
-    xMotor->Ui = xMotor->Ui +  (int)(error[actual]*(xMotor->Ki));
-//    xMotor->Ud = (int)((xMotor->Kd)*(error[actual] - error[prev])/((float)CTRL_TIME));
-    PID = xMotor->Up + xMotor->Ui + xMotor->Ud; // TODO: A*cos(degree)
+    xMotor->Ud = (int)((xMotor->Kd)*(error[actual] - error[prev]));
+
+    if(fabs(error[actual]) < 10.0)
+            xMotor->Ui = xMotor->Ui +  (int)(error[actual]*(xMotor->Ki));
+        else
+            xMotor->Ui = 0.0;
+
+    PID = xMotor->Up + xMotor->Ui + xMotor->Ud;
 
     if(PID>0)
         setDirection(ANTIHORARIO, *xMotor);
