@@ -70,12 +70,12 @@ hetSIGNAL_t M2;
 hetSIGNAL_t M3;
 
                   /*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
-struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  8.0,   0.5,   50.0,   0,   0};
-struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  8.0,   0.5,   50.0,   0,   0};
-struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  8.0,   0.5,   50.0,   0,   0};
+struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  10.0,   0.5,   50.0,   0,   0};
+struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  10.0,   0.5,   50.0,   0,   0};
+struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  10.0,   0.5,   50.0,   0,   0};
 
 /*  CONTROL */
-#define PWM_BASE    0;
+int ISRbit = 0;
 
 /*  SCI Variables   */
 char sciBuffer[12];
@@ -122,10 +122,10 @@ int main(void)
    _enable_interrupt_();
    _enable_IRQ();
 
-   Pos2MCtrl_QHandle = xQueueCreate(3, sizeof(float));
-   MCI2MCtrl_QHandle = xQueueCreate(3, 3*sizeof(float));
-   Int2Pos_QHandle = xQueueCreate(3, sizeof(int));
-   MCtrl2Plan_QHandle = xQueueCreate(3,sizeof(int));
+   Pos2MCtrl_QHandle = xQueueCreate(10, 3*sizeof(float));
+   MCI2MCtrl_QHandle = xQueueCreate(10, 3*sizeof(float));
+   Int2Pos_QHandle = xQueueCreate(10, sizeof(int));
+   MCtrl2Plan_QHandle = xQueueCreate(10,sizeof(int));
 
    /*   INTERRUPCION GIO    */
    gioEnableNotification(gioPORTA,M1_CH_A);
@@ -135,7 +135,7 @@ int main(void)
    xTaskCreate(vPlanner, "angles", 512, NULL, 1, NULL);
    xTaskCreate(vMotorCtrl, "Control", 512, NULL, 2, NULL);
 //   xTaskCreate(vMCI, "MCI", 512, NULL, 1, NULL);
-//   xTaskCreate(vPosition, "GetPosition", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
+   xTaskCreate(vPosition, "GetPosition", 512, NULL, 5, NULL);
 
    vTaskStartScheduler();
 
@@ -150,121 +150,50 @@ int main(void)
 
 void gioNotification(gioPORT_t *port, uint32 bit)   // TODO: Aqui solo se manda el bit de gio que realiza interruocion
 {
-    if(gioGetBit(gioPORTA, M1_CH_A))
-    {
-        if(gioGetBit(gioPORTA,M1_CH_B))
-            Motor_1.counter--;
-
-        else
-            Motor_1.counter++;
-    }
-
-    if(gioGetBit(gioPORTA, M2_CH_A))
-    {
-        if(gioGetBit(gioPORTA,M2_CH_B))
-            Motor_2.counter--;
-
-        else
-            Motor_2.counter++;
-    }
-
-    if(gioGetBit(gioPORTA, M3_CH_A))
-    {
-        if(gioGetBit(hetPORT1,M3_CH_B))
-            Motor_3.counter--;
-
-        else
-            Motor_3.counter++;
-    }
-//    switch (bit) {
-//        case 0:
-//            if(gioGetBit(gioPORTA, M1_CH_A)==1 && gioGetBit(gioPORTA,M1_CH_B)==0)
-//            {
-//                Motor_1.counter++;
-//                break;
-//            }
-//            if(gioGetBit(gioPORTA, M1_CH_A)==1 && gioGetBit(gioPORTA,M1_CH_B)==1)
-//            {
-//                Motor_1.counter--;
-//                break;
-//            }
-//        case 1:
-//            if(gioGetBit(gioPORTA, M1_CH_A)==1 && gioGetBit(gioPORTA,M1_CH_B)==1)
-//            {
-//                Motor_1.counter++;
-//                break;
-//            }
-//            if(gioGetBit(gioPORTA, M1_CH_A)==0 && gioGetBit(gioPORTA,M1_CH_B)==1)
-//            {
-//                Motor_1.counter--;
-//                break;
-//            }
-//        case 4:
-//            if(gioGetBit(gioPORTA, M2_CH_A)==1 && gioGetBit(gioPORTA,M2_CH_B)==0)
-//            {
-//                Motor_2.counter++;
-//                break;
-//            }
-//            if(gioGetBit(gioPORTA, M2_CH_A)==1 && gioGetBit(gioPORTA,M2_CH_B)==1)
-//            {
-//                Motor_2.counter--;
-//                break;
-//            }
-//        case 5:
-//            if(gioGetBit(gioPORTA, M2_CH_A)==1 && gioGetBit(gioPORTA,M2_CH_B)==1)
-//            {
-//                Motor_2.counter++;
-//                break;
-//            }
-//            if(gioGetBit(gioPORTA, M2_CH_A)==0 && gioGetBit(gioPORTA,M2_CH_B)==1)
-//            {
-//                Motor_2.counter--;
-//                break;
-//            }
-//        case 6:
-//            if(gioGetBit(gioPORTA, M3_CH_A)==1 && gioGetBit(gioPORTA,M3_CH_B)==0)
-//            {
-//                Motor_3.counter++;
-//                break;
-//            }
-//            if(gioGetBit(gioPORTA, M3_CH_A)==1 && gioGetBit(gioPORTA,M3_CH_B)==1)
-//            {
-//                Motor_3.counter--;
-//                break;
-//            }
-//        case 7:
-//            if(gioGetBit(gioPORTA, M3_CH_A)==1 && gioGetBit(gioPORTA,M3_CH_B)==1)
-//            {
-//                Motor_3.counter++;
-//                break;
-//            }
-//            if(gioGetBit(gioPORTA, M3_CH_A)==0 && gioGetBit(gioPORTA,M3_CH_B)==1)
-//            {
-//                Motor_3.counter--;
-//                break;
-//            }
-//        default:
-//            break;
-//    }
+    xQueueSendFromISR(Int2Pos_QHandle, &bit, 0);
 }
 
 void vPosition(void *pvParameters)
 {
-    float degree = 0.0;
-    int counter = 0;
-    int contBit = 0;
+    float aPosition[3] = {0.0, 0.0, 0.0};  // Posición actual en grados
+    uint32 ISRBit = 0;
 
     while(1)
     {
-        xQueueReceive(Int2Pos_QHandle,&contBit,portMAX_DELAY);
+        xQueueReceive(Int2Pos_QHandle,&ISRBit,portMAX_DELAY);
 
-        if(contBit==0)
-                counter--;
+        if(ISRBit == M1_CH_A)
+        {
+            if(gioGetBit(gioPORTA,M1_CH_B))
+                Motor_1.counter--;
+
             else
-                counter++;
+                Motor_1.counter++;
+        }
 
-        degree = countToDegree(counter);
-        xQueueSend(Pos2MCtrl_QHandle, &degree, 0);
+        if(ISRBit == M2_CH_A)
+        {
+            if(gioGetBit(gioPORTA,M2_CH_B))
+                Motor_2.counter--;
+
+            else
+                Motor_2.counter++;
+        }
+
+        if(ISRBit == M3_CH_A)
+        {
+            if(gioGetBit(hetPORT1,M3_CH_B))
+                Motor_3.counter--;
+
+            else
+                Motor_3.counter++;
+        }
+
+        aPosition[0] = countToDegree(Motor_1.counter);
+        aPosition[1] = countToDegree(Motor_2.counter);
+        aPosition[2] = countToDegree(Motor_3.counter);
+
+        xQueueSend(Pos2MCtrl_QHandle, aPosition,0);
     }
 }
 
@@ -298,21 +227,19 @@ void vMotorCtrl(void *pvParameters)
 
     while (1)
     {
+        xQueueReceive(Pos2MCtrl_QHandle, aPosition, 0);
         xQueueReceive(MCI2MCtrl_QHandle, dPosition, 0);
 
-//        aPosition[0] = countToDegree(Motor_1.counter);
-//        M1.duty = motorPID(&Motor_1, error, dPosition[0], aPosition[0]);
-//        pwmSetSignal10e3(hetRAM1, M1_PWM, M1);
+        M1.duty = motorPID(&Motor_1, error, dPosition[0], aPosition[0]);
+        pwmSetSignal10e3(hetRAM1, M1_PWM, M1);
 
-//        aPosition[1] = countToDegree(Motor_2.counter);
-//        M2.duty = motorPID(&Motor_2, error, dPosition[1], aPosition[1]);
-//        pwmSetSignal10e3(hetRAM1, M2_PWM, M2);
+        M2.duty = motorPID(&Motor_2, error, dPosition[1], aPosition[1]);
+        pwmSetSignal10e3(hetRAM1, M2_PWM, M2);
 
-        aPosition[2] = countToDegree(Motor_3.counter);
-        M3.duty = motorPID(&Motor_3, error, dPosition[2], aPosition[2]);
-        pwmSetSignal10e3(hetRAM1, M3_PWM, M3);
+//        M3.duty = motorPID(&Motor_3, error, dPosition[2], aPosition[2]);
+//        pwmSetSignal10e3(hetRAM1, M3_PWM, M3);
 
-        if(Motor_3.errCheck == 1) //&& Motor_2.errCheck == 1 && Motor_3.errCheck == 1)
+        if(Motor_1.errCheck == 1 && Motor_2.errCheck)//== 1 && Motor_3.errCheck == 1)
         {
             enaPlan = 1;
             xQueueSend(MCtrl2Plan_QHandle,&enaPlan,100);
