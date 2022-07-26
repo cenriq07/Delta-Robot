@@ -1,0 +1,313 @@
+/** @file sys_main.c 
+*   @brief Application main file
+*   @date 11-Dec-2018
+*   @version 04.07.01
+*
+*   This file contains an empty main function,
+*   which can be used for the application.
+*/
+
+/* 
+* Copyright (C) 2009-2018 Texas Instruments Incorporated - www.ti.com 
+* 
+* 
+*  Redistribution and use in source and binary forms, with or without 
+*  modification, are permitted provided that the following conditions 
+*  are met:
+*
+*    Redistributions of source code must retain the above copyright 
+*    notice, this list of conditions and the following disclaimer.
+*
+*    Redistributions in binary form must reproduce the above copyright
+*    notice, this list of conditions and the following disclaimer in the 
+*    documentation and/or other materials provided with the   
+*    distribution.
+*
+*    Neither the name of Texas Instruments Incorporated nor the names of
+*    its contributors may be used to endorse or promote products derived
+*    from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+*  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
+*  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+*  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
+*  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+*  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+*  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+*  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*
+*/
+
+
+/* USER CODE BEGIN (0) */
+#include "FreeRTOS.h"
+#include "os_task.h"
+#include "sys_core.h"
+#include "gio.h"
+#include "sci.h"
+#include "spi.h"
+#include "het.h"
+#include "os_queue.h"
+
+#include <utilities/PWM.h>
+#include <utilities/MCI.h>
+#include <utilities/DC_Motors.h>
+
+/* USER CODE END */
+
+/* Include Files */
+
+#include "sys_common.h"
+
+/* USER CODE BEGIN (1) */
+
+
+hetSIGNAL_t M1;
+hetSIGNAL_t M2;
+hetSIGNAL_t M3;
+struct Motor Motor_1 = {0,2,4};
+
+#define INTM_TIME       10
+#define CTRL_TIME       50
+#define MCI_TIME        100
+
+
+/*  CONTROL */
+#define PWM_BASE    0;
+
+//int counter=0;     // Numero de cuentas}
+int counter = 0;
+
+/*  SCI Variables   */
+char sciBuffer[12];
+static char BuffReceive[8];
+char cadenaTemporal[6];
+char buffer[6];
+
+/* USER CODE END */
+
+/** @fn void main(void)
+*   @brief Application main function
+*   @note This function is empty by default.
+*
+*   This function is called after startup.
+*   The user can use this function to implement the application.
+*/
+
+/* USER CODE BEGIN (2) */
+void vPosition(void *pvParameters);
+void vMotorCtrl(void *pvParameters);
+void vMCI(void *pvParameters);
+void vPlanner(void *pvParameters);
+
+xQueueHandle Int2Pos_QHandle = 0;
+xQueueHandle Pos2MCtrl_QHandle = 0;
+xQueueHandle MCtrl2Plan_QHandle = 0;
+xQueueHandle MCI2MCtrl_QHandle = 0;
+
+#define ENC_CH_A  0       /* GIO */
+#define ENC_CH_B  1       /* GIO */
+
+/* USER CODE END */
+
+int main(void)
+{
+/* USER CODE BEGIN (3) */
+   gioInit();
+   sciInit();
+   hetInit();
+
+   _enable_interrupt_();
+   _enable_IRQ();
+
+   Pos2MCtrl_QHandle = xQueueCreate(3, sizeof(float));
+   MCI2MCtrl_QHandle = xQueueCreate(3, 3*sizeof(float));
+   Int2Pos_QHandle = xQueueCreate(1, sizeof(int));
+   MCtrl2Plan_QHandle = xQueueCreate(3,sizeof(int));
+
+   /*   INTERRUPCION SCI    */
+   sciReceive(scilinREG,5,(unsigned char *)&BuffReceive);
+
+   /*   INTERRUPCION GIO    */
+   gioEnableNotification(gioPORTA,ENC_CH_A);
+
+   xTaskCreate(vPlanner, "angles", 512, NULL, 1, NULL);
+   xTaskCreate(vMotorCtrl, "Control", 512, NULL, 2, NULL);
+//   xTaskCreate(vMCI, "MCI", 512, NULL, 1, NULL);
+//   xTaskCreate(vPosition, "GetPosition", configMINIMAL_STACK_SIZE, NULL, 5, NULL);
+
+   vTaskStartScheduler();
+
+   while(1);
+/* USER CODE END */
+
+    return 0;
+}
+
+
+/* USER CODE BEGIN (4) */
+
+void gioNotification(gioPORT_t *port, uint32 bit)   // TODO: Aqui solo se manda el bit de gio que realiza interruocion
+{
+    if(gioGetBit(gioPORTA,ENC_CH_B))
+        counter--;
+    else
+        counter++;
+}
+
+void vPosition(void *pvParameters)
+{
+    float degree = 0.0;
+    int counter = 0;
+    int contBit = 0;
+
+    while(1)
+    {
+        xQueueReceive(Int2Pos_QHandle,&contBit,portMAX_DELAY);
+
+        if(contBit==0)
+                counter--;
+            else
+                counter++;
+
+        degree = countToDegree(counter);
+        xQueueSend(Pos2MCtrl_QHandle, &degree, 0);
+    }
+}
+
+void vMotorCtrl(void *pvParameters)
+{
+    portTickType xLastWakeTime = xTaskGetTickCount();
+    int enaPlan = 0;
+
+    /* ---- CONTROL ---*/
+    float   Kp = 20.0,  Ki = 1.0,   Kd = 0.0;
+    int     Up = 0,     Ui = 0,     Ud = 0;
+
+    float error = 0.0, errorAnt = 0.0, absError = 0.0;
+    int PID = 0;
+
+    float degree = 0.0;
+    float dPosition[3] = {0.0, 0.0, 0.0};  // Posición deseada en grados
+
+    /* ------- MOTOR DRIVE ------- */
+    M1.period = 20000;
+    M1.duty = 100;
+
+    pwmSetSignal10e3(hetRAM1, M1_PWM, M1);
+
+    setDirection(HORARIO, Motor_1);
+
+    while (1)
+    {
+//        xQueueReceive(Pos2MCtrl_QHandle, &degree, 0);
+
+        degree = countToDegree(counter);
+
+        xQueueReceive(MCI2MCtrl_QHandle, dPosition, 0);
+
+        error = dPosition[0] - degree;
+        absError = fabs(error);
+
+        Up = (int)(error*Kp);
+        Ui = Ui +  (int)(error*Ki);
+        Ud = (int)(Kd*(error - errorAnt)/((float)CTRL_TIME));
+        PID = Up + Ui + Ud; // TODO: A*cos(degree)
+
+        if(PID>0)
+            setDirection(ANTIHORARIO, Motor_1);
+
+        else if(PID<0)
+            setDirection(HORARIO, Motor_1);
+
+        else
+            setDirection(PARO, Motor_1);
+
+        if(abs(PID) > 1000)
+            PID = 1000;
+
+        M1.duty = abs(PID);
+        pwmSetSignal10e3(hetRAM1, M1_PWM, M1);
+        errorAnt = error;
+
+        if(absError<3.0)
+        {
+            enaPlan = 1;
+            xQueueSend(MCtrl2Plan_QHandle,&enaPlan,100);
+        }
+
+        vTaskDelayUntil(&xLastWakeTime,(CTRL_TIME/portTICK_RATE_MS));
+    }
+}
+
+void vMCI(void *pvParameters)
+{
+    float theta[3] = {0.0, 0.0, 0.0};               // Angulos calculados
+    float deltaPos[3] = {3.0, 0.0, 1.0};            // Punto en el espacio x,y,z
+
+
+    while(1)
+    {
+        getMotorsAngle(theta, deltaPos);
+
+        xQueueSend(MCI2MCtrl_QHandle, theta, 1000);
+    }
+}
+
+void vPlanner(void *pvParameters)
+{
+    float posiciones[8] = {0.0,45.0,90.0,135.0,180.0,225.0,270.0,315.0};
+    int index = 0;
+    float dPosition = 0.0;
+    int enableFlag = 0;
+
+    portTickType xLastWakeTime = xTaskGetTickCount();
+
+    while(1)
+    {
+        if(xQueueReceive(MCtrl2Plan_QHandle,&enableFlag,portMAX_DELAY))
+        {
+            gioToggleBit(gioPORTA, 2);
+            if(index < 8)
+            {
+                dPosition = posiciones[index];
+
+                xQueueSend(MCI2MCtrl_QHandle, &dPosition, 10);
+
+                index++;
+            }
+            else
+            {
+                index = 0;
+            }
+//            vTaskDelayUntil(&xLastWakeTime,6000/portTICK_RATE_MS);
+        }
+    }
+}
+
+
+
+
+/*------------------------------------- |OTRAS FUNCIONES| -------------------------------*/
+
+
+
+void sciNotification(sciBASE_t*sci,unsigned flags)
+{
+//    sciReceive(scilinREG,5,(unsigned char *)&BuffReceive);
+//
+//    if(BuffReceive[0] == 'P')
+//    {
+//       cadenaTemporal[0] = BuffReceive[1];
+//       cadenaTemporal[1] = BuffReceive[2];
+//       cadenaTemporal[2] = BuffReceive[3];
+//       cadenaTemporal[3] = BuffReceive[4];
+//       cadenaTemporal[4] = '\0';
+//       strcpy(buffer, cadenaTemporal);
+//       dPosition = atoi(buffer);
+//    }
+}
+/* USER CODE END */
