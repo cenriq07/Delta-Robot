@@ -40,7 +40,8 @@
 #define M1_CB2   6       /* HET */
 
 #define PULSE_PER_REV   224.0
-#define DEG_CNT         360.0/PULSE_PER_REV     // TODO: Factor de conversión de cuentas a radianes
+#define DEG_CNT         360.0/PULSE_PER_REV
+#define RAD_CNT         6.2832/PULSE_PER_REV
 
 #define M1_PWM pwm0     /* HET 0 */
 #define M2_PWM pwm1     /* HET 1 */
@@ -73,7 +74,7 @@ struct Motor
     int errCheck;
 };
 
-float countToDegree(int counter);      // TODO: countToRads(int counter);
+float countToRads(int counter);
 void setDirection(int dir, struct Motor MX);
 int motorPID(struct Motor *xMotor, float error[], float refPos, float actPos);
 

@@ -70,9 +70,9 @@ hetSIGNAL_t M2;
 hetSIGNAL_t M3;
 
                   /*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
-struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  30.0,   0.5,   20.0,   0,   0};
-struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  30.0,   0.5,   20.0,   0,   0};
-struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  30.0,   0.5,   20.0,   0,   0};
+struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  40.0,   0.4,   8.0,   0,   0};
+struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  40.0,   0.4,   8.0,   0,   0};
+struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  40.0,   0.4,   8.0,   0,   0};
 
 /*  CONTROL */
 int ISRbit = 0;
@@ -132,10 +132,12 @@ int main(void)
    gioEnableNotification(gioPORTA,M2_CH_A);
    gioEnableNotification(gioPORTA,M3_CH_A);
 
-   xTaskCreate(vPlanner, "angles", 512, NULL, 1, NULL);
-   xTaskCreate(vMotorCtrl, "Control", 512, NULL, 2, NULL);
+   xTaskCreate(vMotorCtrl, "PID", 512, NULL, 2, NULL);
+   xTaskCreate(vPlanner, "MCI", 512, NULL, 1, NULL);
+   xTaskCreate(vPosition, "Int2Pos", 512, NULL, 3, NULL);
+
 //   xTaskCreate(vMCI, "MCI", 512, NULL, 1, NULL);
-   xTaskCreate(vPosition, "GetPosition", 512, NULL, 5, NULL);
+
 
    vTaskStartScheduler();
 
@@ -160,40 +162,43 @@ void vPosition(void *pvParameters)
 
     while(1)
     {
-        xQueueReceive(Int2Pos_QHandle,&ISRBit,portMAX_DELAY);
-
-        if(ISRBit == M1_CH_A)
+        if(xQueueReceive(Int2Pos_QHandle,&ISRBit,portMAX_DELAY))
         {
-            if(gioGetBit(gioPORTA,M1_CH_B))
-                Motor_1.counter--;
+            if(ISRBit == M1_CH_A)
+            {
+                if(gioGetBit(gioPORTA,M1_CH_B))
+                    Motor_1.counter++;
 
-            else
-                Motor_1.counter++;
+                else
+                    Motor_1.counter--;
+
+                aPosition[0] = countToRads(Motor_1.counter);
+            }
+
+            if(ISRBit == M2_CH_A)
+            {
+                if(gioGetBit(gioPORTA,M2_CH_B))
+                    Motor_2.counter++;
+
+                else
+                    Motor_2.counter--;
+
+                aPosition[1] = countToRads(Motor_2.counter);
+            }
+
+            if(ISRBit == M3_CH_A)
+            {
+                if(gioGetBit(hetPORT1,M3_CH_B))
+                    Motor_3.counter++;
+
+                else
+                    Motor_3.counter--;
+
+                aPosition[2] = countToRads(Motor_3.counter);
+            }
+
+            xQueueSend(Pos2MCtrl_QHandle, aPosition,0);
         }
-
-        if(ISRBit == M2_CH_A)
-        {
-            if(gioGetBit(gioPORTA,M2_CH_B))
-                Motor_2.counter--;
-
-            else
-                Motor_2.counter++;
-        }
-
-        if(ISRBit == M3_CH_A)
-        {
-            if(gioGetBit(hetPORT1,M3_CH_B))
-                Motor_3.counter--;
-
-            else
-                Motor_3.counter++;
-        }
-
-        aPosition[0] = countToDegree(Motor_1.counter);
-        aPosition[1] = countToDegree(Motor_2.counter);
-        aPosition[2] = countToDegree(Motor_3.counter);
-
-        xQueueSend(Pos2MCtrl_QHandle, aPosition,0);
     }
 }
 
@@ -205,7 +210,6 @@ void vMotorCtrl(void *pvParameters)
     /* ---- CONTROL ---*/
 
     float error[2] = {0.0, 0.0};
-
 
     float aPosition[3] = {0.0, 0.0, 0.0};  // Posición actual en grados
     float dPosition[3] = {0.0, 0.0, 0.0};  // Posición deseada en grados
@@ -267,8 +271,8 @@ void vPlanner(void *pvParameters)
 {
 //    float posiciones[8] = {0.0,45.0,90.0,135.0,180.0,225.0,270.0,315.0};
 //    float posiciones[4] = {0.0,90.0,180.0,270.0};
-//    float posiciones[10] = {0.0,5.0,10.0,15.0,20.0,25.0,30.0,35.0,40.0,45.0};
-    float posiciones[10] = {0.0,10.0,20.0,30.0,40.0,50.0,60.0,70.0,80.0,90.0};
+    float posiciones[10] = {0.0,5.0,10.0,15.0,20.0,25.0,30.0,35.0,40.0,45.0};
+//    float posiciones[10] = {0.0,10.0,20.0,30.0,40.0,50.0,60.0,70.0,80.0,90.0};
 
     int index = 0;
     float dPosition[3] = {0.0, 0.0, 0.0};  // Posición deseada en grados
