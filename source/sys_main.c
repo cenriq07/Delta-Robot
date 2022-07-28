@@ -70,9 +70,9 @@ hetSIGNAL_t M2;
 hetSIGNAL_t M3;
 
                   /*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
-struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  40.0,   0.4,   8.0,   0,   0};
-struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  40.0,   0.4,   8.0,   0,   0};
-struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  40.0,   0.4,   8.0,   0,   0};
+struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  40.0,   0.6,   8.0,   0,   0};
+struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  55.0,   0.6,   8.0,   0,   0};
+struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  55.0,   0.6,   8.0,   0,   0};
 
 /*  CONTROL */
 int ISRbit = 0;
@@ -134,7 +134,7 @@ int main(void)
 
    xTaskCreate(vMotorCtrl, "PID", 512, NULL, 2, NULL);
    xTaskCreate(vPlanner, "MCI", 512, NULL, 1, NULL);
-   xTaskCreate(vPosition, "Int2Pos", 512, NULL, 3, NULL);
+//   xTaskCreate(vPosition, "Int2Pos", 512, NULL, 3, NULL);
 
 //   xTaskCreate(vMCI, "MCI", 512, NULL, 1, NULL);
 
@@ -152,7 +152,41 @@ int main(void)
 
 void gioNotification(gioPORT_t *port, uint32 bit)   // TODO: Aqui solo se manda el bit de gio que realiza interruocion
 {
-    xQueueSendFromISR(Int2Pos_QHandle, &bit, 0);
+//    xQueueSendFromISR(Int2Pos_QHandle, &bit, 0);
+    if(bit == M1_CH_A)
+    {
+        if(gioGetBit(gioPORTA,M1_CH_B))
+            Motor_1.counter++;
+
+        else
+            Motor_1.counter--;
+
+//        aPosition[0] = countToRads(Motor_1.counter);
+    }
+
+    if(bit == M2_CH_A)
+    {
+        if(gioGetBit(gioPORTA,M2_CH_B))
+            Motor_2.counter++;
+
+        else
+            Motor_2.counter--;
+
+//        aPosition[1] = countToRads(Motor_2.counter);
+    }
+
+    if(bit == M3_CH_A)
+    {
+        if(gioGetBit(hetPORT1,M3_CH_B))
+            Motor_3.counter++;
+
+        else
+            Motor_3.counter--;
+
+//        aPosition[2] = countToRads(Motor_3.counter);
+    }
+
+//    xQueueSend(Pos2MCtrl_QHandle, aPosition,0);
 }
 
 void vPosition(void *pvParameters)
@@ -164,40 +198,7 @@ void vPosition(void *pvParameters)
     {
         if(xQueueReceive(Int2Pos_QHandle,&ISRBit,portMAX_DELAY))
         {
-            if(ISRBit == M1_CH_A)
-            {
-                if(gioGetBit(gioPORTA,M1_CH_B))
-                    Motor_1.counter++;
 
-                else
-                    Motor_1.counter--;
-
-                aPosition[0] = countToRads(Motor_1.counter);
-            }
-
-            if(ISRBit == M2_CH_A)
-            {
-                if(gioGetBit(gioPORTA,M2_CH_B))
-                    Motor_2.counter++;
-
-                else
-                    Motor_2.counter--;
-
-                aPosition[1] = countToRads(Motor_2.counter);
-            }
-
-            if(ISRBit == M3_CH_A)
-            {
-                if(gioGetBit(hetPORT1,M3_CH_B))
-                    Motor_3.counter++;
-
-                else
-                    Motor_3.counter--;
-
-                aPosition[2] = countToRads(Motor_3.counter);
-            }
-
-            xQueueSend(Pos2MCtrl_QHandle, aPosition,0);
         }
     }
 }
@@ -231,7 +232,11 @@ void vMotorCtrl(void *pvParameters)
 
     while (1)
     {
-        xQueueReceive(Pos2MCtrl_QHandle, aPosition, 0);
+//        xQueueReceive(Pos2MCtrl_QHandle, aPosition, 0);
+        aPosition[0] = countToRads(Motor_1.counter);
+        aPosition[1] = countToRads(Motor_2.counter);
+        aPosition[2] = countToRads(Motor_3.counter);
+
         xQueueReceive(MCI2MCtrl_QHandle, dPosition, 0);
 
         M1.duty = motorPID(&Motor_1, error, dPosition[0], aPosition[0]);

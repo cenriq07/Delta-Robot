@@ -57,7 +57,10 @@ int motorPID(struct Motor *xMotor, float error[], float refPos, float actPos)
         setDirection(ANTIHORARIO, *xMotor);
 
     else if(PID<0)
+    {
         setDirection(HORARIO, *xMotor);
+        PID = PID - (int)(300*cos(actPos*pi/180));
+    }
 
     else
         setDirection(PARO, *xMotor);

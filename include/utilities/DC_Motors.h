@@ -32,6 +32,7 @@
 #include "stdlib.h"
 #include "gio.h"
 #include "het.h"
+#include "math.h"
 
 #ifndef INCLUDE_UTILITIES_DC_MOTORS_H_
 #define INCLUDE_UTILITIES_DC_MOTORS_H_
@@ -48,6 +49,8 @@
 #define M3_PWM pwm2     /* HET 2 */
 
 #define CTRL_TIME       50
+
+#define pi      3.14159
 
 enum
 {

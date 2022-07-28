@@ -24,6 +24,9 @@ source/utilities/DC_Motors.obj: C:/Users/Enrique/cs_workspace/RobotDelta_04x/inc
 source/utilities/DC_Motors.obj: C:/Users/Enrique/cs_workspace/RobotDelta_04x/include/reg_het.h
 source/utilities/DC_Motors.obj: C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/string.h
 source/utilities/DC_Motors.obj: C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/xlocale/_string.h
+source/utilities/DC_Motors.obj: C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/math.h
+source/utilities/DC_Motors.obj: C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/_defs.h
+source/utilities/DC_Motors.obj: C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/machine/_limits.h
 
 ../source/utilities/DC_Motors.c:
 
@@ -72,4 +75,10 @@ C:/Users/Enrique/cs_workspace/RobotDelta_04x/include/reg_het.h:
 C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/string.h:
 
 C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/xlocale/_string.h:
+
+C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/math.h:
+
+C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/_defs.h:
+
+C:/ti/ccs1100/ccs/tools/compiler/ti-cgt-arm_20.2.5.LTS/include/machine/_limits.h:
 
