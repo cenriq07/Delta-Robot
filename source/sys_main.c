@@ -70,9 +70,9 @@ hetSIGNAL_t M2;
 hetSIGNAL_t M3;
 
                   /*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
-struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  40.0,   0.6,   8.0,   0,   0};
-struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  55.0,   0.6,   8.0,   0,   0};
-struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  55.0,   0.6,   8.0,   0,   0};
+struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  70.0,   1.0,   7.5,   0,   0};
+struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  81.0,   1.0,   8.0,   0,   0};
+struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  83.0,   1.0,   8.0,   0,   0};
 
 /*  CONTROL */
 int ISRbit = 0;

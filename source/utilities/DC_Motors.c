@@ -34,8 +34,8 @@ void setDirection(int dir, struct Motor xMotor)
 
 int motorPID(struct Motor *xMotor, float error[], float refPos, float actPos)
 {
-    int PID = 0;
-
+    float PID = 0;
+    error[prev] = error[actual];
     error[actual] = refPos - actPos;
 
     if(fabs(error[actual]) < 3.0)
@@ -43,32 +43,36 @@ int motorPID(struct Motor *xMotor, float error[], float refPos, float actPos)
     else
         xMotor->errCheck = 0;
 
-    xMotor->Up = (int)(error[actual]*(xMotor->Kp));
-    xMotor->Ud = (int)((xMotor->Kd)*(error[actual] - error[prev]));
-
+    xMotor->Up = error[actual]*(xMotor->Kp);
+    xMotor->Ud = (xMotor->Kd)*(error[actual] - error[prev]);
     if(fabs(error[actual]) < 20.0)
-            xMotor->Ui = xMotor->Ui +  (int)(error[actual]*(xMotor->Ki));
-        else
-            xMotor->Ui = 0.0;
+       {
+           xMotor->Ui = xMotor->Ui +  error[actual]*(xMotor->Ki);
+       }
+       else
+       {
 
-    PID = xMotor->Up + xMotor->Ui + xMotor->Ud;// + (int)(2*cos(actPos));
+       }
+       //            xMotor->Ui = 0.0;
 
-    if(PID>0)
+       PID = xMotor->Up + xMotor->Ui + xMotor->Ud;// + (int)(2*cos(actPos));
+
+    if(PID>0.0)
         setDirection(ANTIHORARIO, *xMotor);
 
-    else if(PID<0)
+    else if(PID<0.0)
     {
         setDirection(HORARIO, *xMotor);
-        PID = PID - (int)(300*cos(actPos*pi/180));
+        PID = PID - 400.0*cos(actPos*pi/180.0);
     }
 
     else
         setDirection(PARO, *xMotor);
 
-    if(abs(PID) > 1000)
-        PID = 1000;
 
-    error[prev] = error[actual];
+    if(fabs(PID) > 1000.0)
+        PID = 1000.0;
 
-    return abs(PID);
+    return abs((int)PID);
+
 }

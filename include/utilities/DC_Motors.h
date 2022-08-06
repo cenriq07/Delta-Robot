@@ -67,9 +67,9 @@ struct Motor
     int pwm;
     int controlBit_1;
     int controlBit_2;
-    int Up;
-    int Ui;
-    int Ud;
+    float Up;
+    float Ui;
+    float Ud;
     float Kp;
     float Ki;
     float Kd;
