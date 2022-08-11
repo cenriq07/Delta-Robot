@@ -5,13 +5,15 @@ a = 6.5;  %9;
 b = 24.0; %18;
 h = 2.5;  %6;
 r = 9.0;  %12;
-z = 5; % Desplazamiento vertical [0,7]
+x = 0;
+y = 0;
+z = 0; % Desplazamiento vertical [0,7]
 
 % [,,5]
 %
 %
 
-p = [0 ; 0 ; z + sqrt(b^2 - (r+a - h)^2)];
+p = [x ; y ; z + sqrt(b^2 - (r+a - h)^2)];
 c = zeros(3, 3);
 %
 %   | c1x c2x c3x |
@@ -58,7 +60,7 @@ end
 
 %display(theta);
 
-theta = theta*180/pi;
+theta = theta;%*180/pi;
 
 display(sprintf('p=[%2.2f,%2.2f,%2.2f]^T ',p(1),p(2),p(3)));
 display(sprintf('TH1=[%2.2f,%2.2f,%2.2f] ',theta(1,1),theta(1,2),theta(1,3)));

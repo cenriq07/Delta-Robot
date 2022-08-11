@@ -11,7 +11,6 @@
 #include "esm.h"
 #include "het.h"
 
-// TODO: Duty cycle -> Sentido correcto
 #define STOP    750
 #define CW      500
 #define CCW     1000

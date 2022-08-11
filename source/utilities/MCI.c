@@ -8,10 +8,10 @@
 
 int i=0, j=0;
 
-float a=9.0;
-float b=18.0;
-float h=6.0;
-float r=12.0;
+float a=6.5;
+float b=24.0;
+float h=2.5;
+float r=9.0;
 
 float p[3] = {1.0,2.0,0.0};
 float c[3][3] = {{0.0,0.0,0.0},
@@ -29,7 +29,7 @@ float sin_theta3i = 0.0;
 float num = 0.0, den = 0.0;
 float M = 0.0, N = 0.0;
 
-void getMotorsAngle(float theta_m[], float p[])
+void getMotorsAngle(float p[], float theta_m[])
 {
     for(i=0; i<3; i++)
     {
@@ -50,6 +50,46 @@ void getMotorsAngle(float theta_m[], float p[])
         N = b*sin_theta3i*sin(theta[1][i]);         // b*sin(theta(3, i))*sin(theta(2, i));
         theta[0][i] = atan2(-c[0][i]*N + c[2][i]*M, c[2][i]*N + c[0][i]*M);
 
-        theta_m[i] = theta[0][i];
+        theta_m[i] = theta[0][i]*180.0/3.14159;
+    }
+}
+
+void point2point(float pOrg[][3], float pDest[], int rowIdx)
+{
+    for(i=0; i<3; i++)
+    {
+        pDest[i] = pOrg[rowIdx][i];
+    }
+}
+
+void setAngleIncr(float Actual[], float Final[], float New[], int mCheck[])
+{
+    int inc = 1.0;
+    for(i=0; i<3; i++)
+    {
+        if(Final[i] > Actual[i] && mCheck[i])
+        {
+            if((Actual[i] + inc) < Final[i])
+            {
+                New[i] = Actual[i] + inc;
+            }
+            else
+            {
+                New[i] = Actual[i] + (Final[i] - Actual[i]);
+                mCheck[i] = 1;
+            }
+        }
+        else
+        {
+            if((Actual[i] - inc) > Final[i] && mCheck[i])
+            {
+                New[i] = Actual[i] - inc;
+            }
+            else
+            {
+                New[i] = Actual[i] - (Actual[i] - Final[i]);
+                mCheck[i] = 1;
+            }
+        }
     }
 }

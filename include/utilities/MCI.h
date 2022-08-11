@@ -12,6 +12,10 @@
 #include "stdlib.h"
 #include "math.h"
 
-void getMotorsAngle(float theta_m[],float p[]);
+#define N_PNTS    6                           // Numero de puntos destino
+
+void getMotorsAngle(float p[], float theta_m[]);
+void point2point(float pOrg[][3], float pDest[], int rowIdx);
+void setAngleIncr(float Actual[], float Final[], float New[], int mCheck[]);
 
 #endif /* INCLUDE_UTILITIES_MCI_H_ */
