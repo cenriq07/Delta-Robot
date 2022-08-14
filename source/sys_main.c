@@ -64,15 +64,32 @@
 
 /* USER CODE BEGIN (1) */
 
+/*
+ * UPDOWN
+ * CUADRADO
+ * TRIANGULO
+ *
+ * */
+
 /*------------------------------- USER PARAMETERS ------------------------------------*/
+/*==============================>*/ #define     TRIANGULO /* <=========================*/
+
+#ifdef UPDOWN
+float pDeltaPath[N_PNTS][3] = {{0.0, 0.0, 5.0}, {0.0, 0.0, 0.0}};
+#endif
+#ifdef TRIANGULO
+float pDeltaPath[N_PNTS][3] = {{-1.6, -4.9, 3.0}, {-3.2, 5.5, 3.0}, {5.5, 3.0, 3.0}};
+#endif
+#ifdef CUADRADO
+float pDeltaPath[N_PNTS][3] = {{-1.6, -4.9, 3.0}, {-4.9, -1.1, 3.0},{2.2, 7.5, 3.0}, {5.5, 3.0, 3.0}};
+#endif
+
 float pDeltaHome[3] = {0.0, 0.0, 0.0};
-//float pDeltaPath[N_PNTS][3] = {{0.0, 0.0, 5.0}, {0.0, 0.0, 0.0}};
-float pDeltaPath[N_PNTS][3] = {{0.0, 0.0, 5.0}, {0.0, 0.0, 0.0},{5.0, -5.0, 5.0}, {0.0, 0.0, 0.0},{-5.0, 5.0, 5.0},{0.0, 0.0, 0.0}};
 
                   /*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
-struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  20.0,   1.0,   3.0,   0,   0};
-struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  20.0,   1.0,   3.0,   0,   0};
-struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  35.0,   1.0,   3.0,   0,   0};
+struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  39.0,   0.8,   18.0,   0,   0};
+struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  40.0,   0.8,   18.0,   0,   0};
+struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  41.0,   0.8,   18.0,   0,   0};
 
 /*------------------------------------------------------------------------------------*/
 
@@ -128,7 +145,7 @@ int main(void)
    Pos2MCtrl_QHandle = xQueueCreate(10, 3*sizeof(float));
    MCI2MCtrl_QHandle = xQueueCreate(10, 3*sizeof(float));
    Int2Pos_QHandle = xQueueCreate(10, sizeof(int));
-   MCtrl2Plan_QHandle = xQueueCreate(10,sizeof(int));
+   MCtrl2Plan_QHandle = xQueueCreate(10,3*sizeof(float));
 
    /*   INTERRUPCION GIO    */
    gioEnableNotification(gioPORTA,M1_CH_A);
@@ -265,12 +282,10 @@ void vPlanner(void *pvParameters)
             getMotorsAngle(pDPathAux, aFinalPosition);                              // Entra punto y salen ángulos de motores)
             setAngleIncr(aActualPosition, aFinalPosition, aNewPosition, motorCheck);  // Incrementa angulo actual
 
-            if(motorCheck[0] == 1 && motorCheck[1] == 1 && motorCheck[2] == 1)
+            if(fabs(aActualPosition[0] - aFinalPosition[0]) < 1.0 &&
+               fabs(aActualPosition[1] - aFinalPosition[1]) < 1.0 &&
+               fabs(aActualPosition[2] - aFinalPosition[2]) < 1.0)
             {
-                motorCheck[0] = 0;
-                motorCheck[1] = 0;
-                motorCheck[2] = 0;
-
                 if(idxPath < (N_PNTS - 1))
                     idxPath++;
                 else

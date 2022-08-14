@@ -38,7 +38,7 @@ int motorPID(struct Motor *xMotor, float error[], float refPos, float actPos)
     error[prev] = error[actual];
     error[actual] = refPos - actPos;
 
-    if(fabs(error[actual]) < 1.0)
+    if(fabs(error[actual]) < 2.5)
         xMotor->errCheck = 1;
     else
         xMotor->errCheck = 0;
@@ -72,8 +72,8 @@ int motorPID(struct Motor *xMotor, float error[], float refPos, float actPos)
     if(fabs(PID) > 3000.0)
         PID = 3000.0;
 
-    if(fabs(PID) < 500.0)
-        PID = 500.0;
+    if(fabs(PID) < 400.0)
+        PID = 400.0;
 
     return abs((int)PID);
 

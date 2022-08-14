@@ -64,32 +64,23 @@ void point2point(float pOrg[][3], float pDest[], int rowIdx)
 
 void setAngleIncr(float Actual[], float Final[], float New[], int mCheck[])
 {
-    int inc = 1.0;
+    int inc = 5.0;
+
     for(i=0; i<3; i++)
     {
-        if(Final[i] > Actual[i] && mCheck[i])
+        if(Actual[i] < Final[i])
         {
             if((Actual[i] + inc) < Final[i])
-            {
                 New[i] = Actual[i] + inc;
-            }
             else
-            {
-                New[i] = Actual[i] + (Final[i] - Actual[i]);
-                mCheck[i] = 1;
-            }
+                New[i] = Final[i];
         }
         else
         {
-            if((Actual[i] - inc) > Final[i] && mCheck[i])
-            {
+            if((Actual[i] - inc) > Final[i])
                 New[i] = Actual[i] - inc;
-            }
             else
-            {
-                New[i] = Actual[i] - (Actual[i] - Final[i]);
-                mCheck[i] = 1;
-            }
+                New[i] = Final[i];
         }
     }
 }

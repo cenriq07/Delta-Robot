@@ -12,7 +12,7 @@
 #include "stdlib.h"
 #include "math.h"
 
-#define N_PNTS    6                           // Numero de puntos destino
+#define N_PNTS    3                           // Numero de puntos destino
 
 void getMotorsAngle(float p[], float theta_m[]);
 void point2point(float pOrg[][3], float pDest[], int rowIdx);
