@@ -87,9 +87,9 @@ float pDeltaPath[N_PNTS][3] = {{-1.6, -4.9, 3.0}, {-4.9, -1.1, 3.0},{2.2, 7.5, 3
 float pDeltaHome[3] = {0.0, 0.0, 0.0};
 
                   /*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
-struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  39.0,   0.8,   18.0,   0,   0};
-struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  40.0,   0.8,   18.0,   0,   0};
-struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  41.0,   0.8,   18.0,   0,   0};
+struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  44.0,   0.8,   18.0,   0,   0};
+struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  45.0,   0.8,   18.0,   0,   0};
+struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  46.0,   0.8,   18.0,   0,   0};
 
 /*------------------------------------------------------------------------------------*/
 
@@ -102,6 +102,12 @@ hetSIGNAL_t M3;
 /*  SCI Variables   */
 char sciBuffer[12];
 
+struct posActStruc
+{
+    float theta1;
+    float theta2;
+    float theta3;
+};
 /* USER CODE END */
 
 /** @fn void main(void)
@@ -113,6 +119,7 @@ char sciBuffer[12];
 */
 
 /* USER CODE BEGIN (2) */
+void vPosition(void *pvParameters);
 void vMotorCtrl(void *pvParameters);
 void vPlanner(void *pvParameters);
 
@@ -142,9 +149,9 @@ int main(void)
    _enable_interrupt_();
    _enable_IRQ();
 
-   Pos2MCtrl_QHandle = xQueueCreate(10, 3*sizeof(float));
+   Int2Pos_QHandle = xQueueCreate(1, sizeof(uint32));
+   Pos2MCtrl_QHandle = xQueueCreate(1, 3*sizeof(float));
    MCI2MCtrl_QHandle = xQueueCreate(10, 3*sizeof(float));
-   Int2Pos_QHandle = xQueueCreate(10, sizeof(int));
    MCtrl2Plan_QHandle = xQueueCreate(10,3*sizeof(float));
 
    /*   INTERRUPCION GIO    */
@@ -154,6 +161,7 @@ int main(void)
 
    xTaskCreate(vMotorCtrl, "PID", 512, NULL, 2, NULL);
    xTaskCreate(vPlanner, "MCI", 512, NULL, 1, NULL);
+   xTaskCreate(vPosition, "Cuentas", 128, NULL, 3, NULL);
 
    vTaskStartScheduler();
 
@@ -167,31 +175,58 @@ int main(void)
 
 void gioNotification(gioPORT_t *port, uint32 bit)
 {
-    if(bit == M1_CH_A)
+    portBASE_TYPE xHigherPriorityTaskWoken;
+    xHigherPriorityTaskWoken = pdFALSE;
+    xQueueOverwriteFromISR(Int2Pos_QHandle,&bit,&xHigherPriorityTaskWoken);
+    if(xHigherPriorityTaskWoken)
     {
-        if(gioGetBit(gioPORTA,M1_CH_B))
-            Motor_1.counter++;
-
-        else
-            Motor_1.counter--;
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
+}
 
-    if(bit == M2_CH_A)
+void vPosition(void *pvParameters)
+{
+    uint32 ISRbit = 0;
+    float aActualPosition[3] = {0.0, 0.0, 0.0};  // Posición actual en grados
+
+    while(1)
     {
-        if(gioGetBit(gioPORTA,M2_CH_B))
-            Motor_2.counter++;
+        if(xQueueReceive(Int2Pos_QHandle, &ISRbit, portMAX_DELAY) == pdTRUE)
+        {
+            if(ISRbit == M1_CH_A)
+            {
+                if(gioGetBit(gioPORTA,M1_CH_B))
+                    Motor_1.counter++;
 
-        else
-            Motor_2.counter--;
-    }
+                else
+                    Motor_1.counter--;
 
-    if(bit == M3_CH_A)
-    {
-        if(gioGetBit(hetPORT1,M3_CH_B))
-            Motor_3.counter++;
+                aActualPosition[0] = countToRads(Motor_1.counter);
+            }
 
-        else
-            Motor_3.counter--;
+            if(ISRbit == M2_CH_A)
+            {
+                if(gioGetBit(gioPORTA,M2_CH_B))
+                    Motor_2.counter++;
+
+                else
+                    Motor_2.counter--;
+
+                aActualPosition[1] = countToRads(Motor_2.counter);
+            }
+
+            if(ISRbit == M3_CH_A)
+            {
+                if(gioGetBit(hetPORT1,M3_CH_B))
+                    Motor_3.counter++;
+
+                else
+                    Motor_3.counter--;
+
+                aActualPosition[2] = countToRads(Motor_3.counter);
+            }
+            xQueueOverwrite(Pos2MCtrl_QHandle, aActualPosition);
+        }
     }
 }
 
@@ -223,10 +258,8 @@ void vMotorCtrl(void *pvParameters)
 
     while (1)
     {
-        aActualPosition[0] = countToRads(Motor_1.counter);
-        aActualPosition[1] = countToRads(Motor_2.counter);
-        aActualPosition[2] = countToRads(Motor_3.counter);
 
+        xQueueReceive(Pos2MCtrl_QHandle, aActualPosition, 0);
         xQueueReceive(MCI2MCtrl_QHandle, aRefPosition, 0);
 
         M1.duty = motorPID(&Motor_1, error, aRefPosition[0], aActualPosition[0]);
@@ -249,23 +282,9 @@ void vMotorCtrl(void *pvParameters)
     }
 }
 
-//void vMCI(void *pvParameters)
-//{
-//    float theta[3] = {0.0, 0.0, 0.0};               // Angulos calculados
-//    float deltaPos[3] = {3.0, 0.0, 1.0};            // Punto en el espacio x,y,z
-//
-//
-//    while(1)
-//    {
-//        getMotorsAngle(theta, deltaPos);
-//
-//        xQueueSend(MCI2MCtrl_QHandle, theta, 1000);
-//    }
-//}
-
 void vPlanner(void *pvParameters)
 {
-    int idxPath = 0, idxStep = 0;;
+    int idxPath = 0;
     int motorCheck[3] = {0,0,0};
     float aActualPosition[3] = {0.0, 0.0, 0.0};  // Posición actual en grados
     float aFinalPosition[3] = {0.0, 0.0, 0.0};  // Posición final deseada en grados
