@@ -72,8 +72,8 @@ int motorPID(struct Motor *xMotor, float error[], float refPos, float actPos)
     if(fabs(PID) > 3000.0)
         PID = 3000.0;
 
-    if(fabs(PID) < 400.0)
-        PID = 400.0;
+    if(fabs(PID) < 300.0)
+        PID = 300.0;
 
     return abs((int)PID);
 
