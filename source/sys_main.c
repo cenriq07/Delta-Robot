@@ -72,10 +72,11 @@
  * */
 
 /*------------------------------- USER PARAMETERS ------------------------------------*/
+#define GARRA   TRUE
 /*==============================>*/ #define     TRIANGULO /* <=========================*/
 
 #ifdef UPDOWN
-float pDeltaPath[N_PNTS][3] = {{0.0, 0.0, 5.0}, {0.0, 0.0, 0.0}};
+float pDeltaPath[N_PNTS][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 #endif
 #ifdef TRIANGULO
 float pDeltaPath[N_PNTS][3] = {{-1.6, -4.9, 3.0}, {-3.2, 5.5, 3.0}, {5.5, 3.0, 3.0}};
@@ -86,10 +87,19 @@ float pDeltaPath[N_PNTS][3] = {{-1.6, -4.9, 3.0}, {-4.9, -1.1, 3.0},{2.2, 7.5, 3
 
 float pDeltaHome[3] = {0.0, 0.0, 0.0};
 
+#ifdef GARRA
                   /*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
+struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  132.0,   2.0,   54.0,   0,   0};
+struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  135.0,   2.0,   54.0,   0,   0};
+struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  138.0,   2.0,   54.0,   0,   0};
+
+#else
+/*   PWM CB1 CB2  Up  Up  Ui   Kp     Ki      Kd   cont erChk */
 struct Motor Motor_1 = {0,  2,  4,  0,  0,  0,  44.0,   0.8,   18.0,   0,   0};
 struct Motor Motor_2 = {6,  10, 12, 0,  0,  0,  45.0,   0.8,   18.0,   0,   0};
 struct Motor Motor_3 = {14, 16, 18, 0,  0,  0,  46.0,   0.8,   18.0,   0,   0};
+#endif
+
 
 /*------------------------------------------------------------------------------------*/
 

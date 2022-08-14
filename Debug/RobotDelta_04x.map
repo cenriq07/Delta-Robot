@@ -1,7 +1,7 @@
 ******************************************************************************
                   TI ARM Linker PC v20.2.5                     
 ******************************************************************************
->> Linked Sun Aug 14 16:50:03 2022
+>> Linked Sun Aug 14 17:37:38 2022
 
 OUTPUT FILE NAME:   <RobotDelta_04x.out>
 ENTRY POINT SYMBOL: "_c_int00"  address: 00013b14
@@ -12,7 +12,7 @@ MEMORY CONFIGURATION
          name            origin    length      used     unused   attr    fill
 ----------------------  --------  ---------  --------  --------  ----  --------
   VECTORS               00000000   00000020  00000020  00000000     X
-  KERNEL                00000020   00008000  00005154  00002eac  R  X
+  KERNEL                00000020   00008000  0000514c  00002eb4  R  X
   FLASH0                00008020   00057fe0  0000e690  00049950  R  X
   STACKS                08000000   00000800  00000000  00000800  RW  
   KRAM                  08000800   00000800  00000104  000006fc  RW  
@@ -23,10 +23,10 @@ SEGMENT ALLOCATION MAP
 
 run origin  load origin   length   init length attrs members
 ----------  ----------- ---------- ----------- ----- -------
-00000000    00000000    00005178   00005178    r-x
+00000000    00000000    00005170   00005170    r-x
   00000000    00000000    00000020   00000020    r-x .intvecs
   00000020    00000020    0000508c   0000508c    r-x .kernelTEXT
-  000050b0    000050b0    000000c8   000000c8    r-- .cinit
+  000050b0    000050b0    000000c0   000000c0    r-- .cinit
 00008020    00008020    0000e694   0000e694    r-x
   00008020    00008020    0000deb4   0000deb4    r-x .text
   00015ed8    00015ed8    000007dc   000007dc    r-- .const
@@ -55,15 +55,15 @@ section   page    origin      length       input sections
                   00004980    000003b0     os_portasm.obj (.kernelTEXT)
                   00004d30    0000037c     os_heap.obj (.kernelTEXT)
 
-.cinit     0    000050b0    000000c8     
-                  000050b0    00000079     (.cinit..data.load) [load image, compression = lzss]
-                  00005129    00000003     --HOLE-- [fill = 0]
-                  0000512c    0000000c     (__TI_handler_table)
-                  00005138    00000009     (.cinit..kernelBSS.load) [load image, compression = lzss]
-                  00005141    00000007     --HOLE-- [fill = 0]
-                  00005148    00000008     (.cinit..bss.load) [load image, compression = zero_init]
-                  00005150    00000008     (.cinit..kernelHEAP.load) [load image, compression = zero_init]
-                  00005158    00000020     (__TI_cinit_table)
+.cinit     0    000050b0    000000c0     
+                  000050b0    00000077     (.cinit..data.load) [load image, compression = lzss]
+                  00005127    00000001     --HOLE-- [fill = 0]
+                  00005128    0000000c     (__TI_handler_table)
+                  00005134    00000009     (.cinit..kernelBSS.load) [load image, compression = lzss]
+                  0000513d    00000003     --HOLE-- [fill = 0]
+                  00005140    00000008     (.cinit..bss.load) [load image, compression = zero_init]
+                  00005148    00000008     (.cinit..kernelHEAP.load) [load image, compression = zero_init]
+                  00005150    00000020     (__TI_cinit_table)
 
 .text      0    00008020    0000deb4     
                   00008020    000024f0     sys_selftest.obj (.text)
@@ -281,23 +281,23 @@ MODULE SUMMARY
     +--+----------------------------+-------+---------+---------+
        Total:                       20512   544       4      
                                                              
-       Linker Generated:            0       190       0      
+       Linker Generated:            0       188       0      
     +--+----------------------------+-------+---------+---------+
-       Grand Total:                 77664   2202      8880   
+       Grand Total:                 77664   2200      8880   
 
 
 LINKER GENERATED COPY TABLES
 
-__TI_cinit_table @ 00005158 records: 4, size/record: 8, table size: 32
-	.data: load addr=000050b0, load size=00000079 bytes, run addr=08003000, run size=00000160 bytes, compression=lzss
-	.kernelBSS: load addr=00005138, load size=00000009 bytes, run addr=08000800, run size=00000104 bytes, compression=lzss
-	.bss: load addr=00005148, load size=00000008 bytes, run addr=08003160, run size=00000050 bytes, compression=zero_init
-	.kernelHEAP: load addr=00005150, load size=00000008 bytes, run addr=08001000, run size=00002000 bytes, compression=zero_init
+__TI_cinit_table @ 00005150 records: 4, size/record: 8, table size: 32
+	.data: load addr=000050b0, load size=00000077 bytes, run addr=08003000, run size=00000160 bytes, compression=lzss
+	.kernelBSS: load addr=00005134, load size=00000009 bytes, run addr=08000800, run size=00000104 bytes, compression=lzss
+	.bss: load addr=00005140, load size=00000008 bytes, run addr=08003160, run size=00000050 bytes, compression=zero_init
+	.kernelHEAP: load addr=00005148, load size=00000008 bytes, run addr=08001000, run size=00002000 bytes, compression=zero_init
 
 
 LINKER GENERATED HANDLER TABLE
 
-__TI_handler_table @ 0000512c records: 3, size/record: 4, table size: 12
+__TI_handler_table @ 00005128 records: 3, size/record: 4, table size: 12
 	index: 0, handler: __TI_decompress_lzss
 	index: 1, handler: __TI_decompress_none
 	index: 2, handler: __TI_zero_init
@@ -365,10 +365,10 @@ address   name
 0800312c  Pos2MCtrl_QHandle                     
 UNDEFED   SHT$$INIT_ARRAY$$Base                 
 UNDEFED   SHT$$INIT_ARRAY$$Limit                
-00005158  __TI_CINIT_Base                       
-00005178  __TI_CINIT_Limit                      
-0000512c  __TI_Handler_Table_Base               
-00005138  __TI_Handler_Table_Limit              
+00005150  __TI_CINIT_Base                       
+00005170  __TI_CINIT_Limit                      
+00005128  __TI_Handler_Table_Base               
+00005134  __TI_Handler_Table_Limit              
 00012f44  __TI_PINIT_Base                       
 00012f48  __TI_PINIT_Limit                      
 00015b40  __TI_auto_init_nobinit_nopinit        
@@ -856,10 +856,10 @@ address   name
 0000507c  xPortGetFreeHeapSize                  
 00005088  xPortGetMinimumEverFreeHeapSize       
 00005094  vPortInitialiseBlocks                 
-0000512c  __TI_Handler_Table_Base               
-00005138  __TI_Handler_Table_Limit              
-00005158  __TI_CINIT_Base                       
-00005178  __TI_CINIT_Limit                      
+00005128  __TI_Handler_Table_Base               
+00005134  __TI_Handler_Table_Limit              
+00005150  __TI_CINIT_Base                       
+00005170  __TI_CINIT_Limit                      
 00008020  selftestFailNotification              
 00008030  ccmSelfCheck                          
 00008174  memoryInit                            
